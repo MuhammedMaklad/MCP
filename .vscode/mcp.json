@@ -1,0 +1,19 @@
+{
+  "servers": {
+    "test-my-mcp-server": {
+      // Configuration for a server named "test-my-mcp-server"
+      "type": "stdio", // Specifies the communication type as standard input/output
+      "command": "node", // The command to start the server (Node.js in this case)
+      "args": ["build/server.js"], // Arguments passed to the command, pointing to the server's entry file
+      "cwd": "${workspaceFolder}", // Sets the current working directory to the workspace folder
+      "dev": {
+        // Development-specific configurations
+        "watch": "build/**/*.js", // Watches for changes in JavaScript files in the "build" directory
+        "debug": {
+          "type": "node" // Specifies the debugger type as Node.js
+        }
+      }
+    }
+  },
+  "inputs": [] // Placeholder for additional inputs, currently empty
+}
