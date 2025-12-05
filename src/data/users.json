@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "Alice Smith",
+    "email": "Alice@test.com",
+    "address": "123 Main St, Springfield",
+    "phone": "555-1234"
+  },
+  {
+    "id": 2,
+    "name": "test",
+    "email": "test@gmail.com",
+    "address": "tsets",
+    "phone": "45455454554"
+  },
+  {
+    "id": 3,
+    "name": "John Doe",
+    "email": "example@example.com",
+    "address": "123 Main St",
+    "phone": "123-456-7890"
+  }
+]
