@@ -3,12 +3,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 // Importing the StdioServerTransport class for communication over standard input/output
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import fs from "fs/promises";
+import { text } from "stream/consumers";
 import { z } from "zod";
 // Creating an instance of the MCP server with metadata
 const server = new McpServer({
   name: "Example MCP Server", // Name of the server
   version: "1.0.0",           // Version of the server
 });
+
 
 //! Tools
 server.tool(
@@ -44,25 +46,50 @@ server.tool(
     }
   }
 );
-
-//? Helper function to simulate user creation
+//*----------------------------------------------------------------
+//? Helper function to create a user and save their data to a file
 async function createUser(params: {
   name: string;
   email: string;
   address: string;
   phone: string;
 }) {
-  const users = await import("./data/users.json",
-    { with: { type: "json" } })
-    .then(m => m.default)
+  const users = await import("./data/users.json", { with: { type: "json" } }).then((mod) => mod.default as any[]); // Importing existing users from a JSON file
 
-  const id = users.length + 1;
-  users.push({ id, ...params });
+  const id = users.length + 1; // Generating a new user ID based on the number of existing users
+  users.push({ id, ...params }); // Adding the new user to the list
+
   await fs.writeFile("./src/data/users.json", JSON.stringify(users, null, 2));
+
   return id;
 }
+//*----------------------------------------------------------------
 
+server.resource(
+  "Users", // The unique identifier for the resource
+  "user://all", // The URI of the resource
+  {
+    // Metadata about the resource
+    title: "Users", // The title of the resource
+    description: "Get all users in database", // A description of what the resource provides
+    mimeType: "application/json", // The MIME type of the resource, indicating it provides JSON data
+  },
+  async (uri) => {
+    // The callback function to handle requests for this resource
+    const users = await import("./data/users.json", { with: { type: "json" } })
+      .then((mod) => mod.default as any[]); // Dynamically importing the users data from a JSON file
 
+    return {
+      contents: [
+        {
+          uri: uri.href, // The URI of the resource
+          type: "application/json", // The MIME type of the resource
+          text: JSON.stringify(users), // The content of the resource as a JSON string
+        }
+      ]
+    };
+  }
+);
 // Main function to initialize and start the server
 async function main() {
   // Creating a transport layer for communication using standard input/output
