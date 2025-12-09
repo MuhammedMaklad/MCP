@@ -1,5 +1,5 @@
 // Importing the McpServer class from the Model Context Protocol SDK
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 // Importing the StdioServerTransport class for communication over standard input/output
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import fs from "fs/promises";
@@ -90,6 +90,53 @@ server.resource(
     };
   }
 );
+
+server.resource(
+  "user-details", // The unique identifier for the resource
+  new ResourceTemplate("users://{userId}/details", { list: undefined }), // The URI of the resource
+  {
+    // Metadata about the resource
+    title: "User Details", // The title of the resource
+    description: "Get details for a specific user by ID", // A description of what the resource provides
+    mimeType: "application/json", // The MIME type of the resource, indicating it provides JSON data
+  },
+  async (uri, { userId }) => {
+    // The callback function to handle requests for this resource
+
+    const users = await import("./data/users.json", { with: { type: "json" } })
+      .then((mod) => mod.default as any[]); // Dynamically importing the users data from a JSON file
+    const user = users.find((u) => u.id === Number(userId)); // Finding the user with the specified ID
+
+    if (user === null)
+      return {
+        contents: [
+          {
+            uri: uri.href, // The URI of the resource
+            type: "application/json", // The MIME type of the resource
+            text: JSON.stringify({ error: "User not found" }), // The content of the resource as a JSON string
+          }
+        ]
+      };
+    return {
+      contents: [
+        {
+          uri: uri.href, // The URI of the resource
+          type: "application/json", // The MIME type of the resource
+          text: JSON.stringify(user), // The content of the resource as a JSON string
+        }
+      ]
+    }
+  }
+)
+
+
+
+
+
+
+
+
+
 // Main function to initialize and start the server
 async function main() {
   // Creating a transport layer for communication using standard input/output
