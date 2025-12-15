@@ -2,6 +2,7 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 // Importing the StdioServerTransport class for communication over standard input/output
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CreateMessageResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import fs from "fs/promises";
 import { text } from "stream/consumers";
 import { z } from "zod";
@@ -63,6 +64,63 @@ async function createUser(params: {
 
   return id;
 }
+
+server.tool(
+  "create-random-user",
+  "Create a random user with fake data",
+  {
+    title: "Create Random User",
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
+  async () => {
+    const res = await server.server.request(
+      {
+        method: "sampling/createMessage",
+        params: {
+          messages: [
+            {
+              role: "user",
+              content: {
+                type: "text",
+                text: "Generate fake user data. The user should have a realistic name, email, address, and phone number. Return this data as a JSON object with no other text or formatter so it can be used with JSON.parse.",
+              },
+            },
+          ],
+          maxTokens: 1024,
+        },
+      },
+      CreateMessageResultSchema
+    )
+
+    if (res.content.type !== "text") {
+      return {
+        content: [{ type: "text", text: "Failed to generate user data" }],
+      }
+    }
+
+    try {
+      const fakeUser = JSON.parse(
+        res.content.text
+          .trim()
+          .replace(/^```json/, "")
+          .replace(/```$/, "")
+          .trim()
+      )
+
+      const id = await createUser(fakeUser)
+      return {
+        content: [{ type: "text", text: `User ${id} created successfully` }],
+      }
+    } catch {
+      return {
+        content: [{ type: "text", text: "Failed to generate user data" }],
+      }
+    }
+  }
+)
 //*----------------------------------------------------------------
 
 server.resource(
@@ -128,8 +186,29 @@ server.resource(
     }
   }
 )
-
-
+//* ---------------------------------------------------------------
+server.prompt(
+  "generate-fake-user", // The unique identifier for the prompt
+  "Generate a fake user profile", // A description of what the prompt does
+  {
+    // Defining the parameters required by the prompt
+    name: z.string(), // An string parameter for the name of the fake user
+  },
+  ({ name }) => {
+    // The implementation of the prompt's functionality
+    return {
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `Generate a detailed fake user profile for a person named ${name}, including age, address, email, and phone number.`,
+          },
+        }
+      ]
+    };
+  }
+)
 
 
 
